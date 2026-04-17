@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Registro{% endblock %}
+
+{% block contenido %}
+
+    <div class="row justify-content-center">
+        <div class="col-md-4 mt-5 pt-5">
+            
+            <div class="card p-4 pt-5  shadow"  style="background-color: #F5E6E8;">
+                 <h3 class="text-center mb-3" style="color:#5A5A5A;">
+                    REGÍSTRATE PARA EMPEZAR A ORGANIZAR TUS TAREAS
+                </h3>
+
+                <form method="POST">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">NOMBRE</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">APELLIDO</label>
+                        <input type="text" name="apellido" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">CORREO</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">CONTRASEÑA</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+
+                    <a href="/login" class="btn w-100 mb-3"
+                       style="background-color:#C8A2AA; color:white; border-radius:10px;">
+                        REGISTRARSE
+                    </a>
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
