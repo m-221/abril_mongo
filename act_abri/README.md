@@ -1,3 +1,4 @@
 MELANIE FERNANDA PEDROZA INFANTE 
 4_D
-<img width="1472" height="1104" alt="image" src="https://github.com/user-attachments/assets/c95594ee-a2c0-46f5-b0e7-1b4d5b78e6a9" />
+<img width="184" height="138" alt="9cce55a5-2660-4ca7-b671-4e4d260b5c26" src="https://github.com/user-attachments/assets/683e2c65-b810-481e-ad7c-feec5e1f2227" />
+
