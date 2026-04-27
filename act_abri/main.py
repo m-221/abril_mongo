@@ -1,14 +1,61 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
 from werkzeug.security import generate_password_hash, check_password_hash
+from email_validator import validate_email, EmailNotValidError
+
+import smtplib
+from email.mime.text import MIMEText
+import random
+from datetime import datetime
+
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta"
 
+
+EMAIL_USER = "fernandainfantepedroza040819@gmail.com"
+EMAIL_PASS = "nvfe mqow ylpn qpas"
+
+
 client = MongoClient("mongodb://localhost:27017/")
-db = client["mi_base"]
+db = client["gestor_tareas"]
 usuarios = db["usuarios"]
 
+try:
+    usuarios.drop_index("email_1")
+except Exception:
+    pass
+
+usuarios.create_index(
+    "email",
+    unique=True,
+    sparse=True
+)
+
+
+def enviar_correo(destinatario, codigo):
+    mensaje = MIMEText(f"Tu código es: {codigo}")
+    mensaje['Subject'] = "Código"
+    mensaje['From'] = EMAIL_USER
+    mensaje['To'] = destinatario
+
+    try:
+        servidor = smtplib.SMTP("smtp.gmail.com", 587)
+        servidor.starttls()
+        servidor.login(EMAIL_USER, EMAIL_PASS)
+        servidor.send_message(mensaje)
+        servidor.quit()
+    except Exception as e:
+        print("❌ Error enviando correo:", e)
+
+
+def validar_email(email):
+    try:
+        valid = validate_email(email)
+        return valid.email
+    except EmailNotValidError:
+        return None
 
 
 @app.route('/')
@@ -25,37 +72,137 @@ def login():
         usuario = usuarios.find_one({"nombre": username})
 
         if usuario and check_password_hash(usuario["password"], password):
+
+            if not usuario.get("activo"):
+                flash("Debes verificar tu correo", "warning")
+                return redirect(url_for('login'))
+
             session['username'] = username
             session['user_id'] = str(usuario["_id"])
+
             flash('Inicio de sesión exitoso', 'success')
             return redirect(url_for('gestordetareas'))
-        else:
-            flash('Credenciales incorrectas', 'danger')
+
+        flash('Credenciales incorrectas', 'danger')
 
     return render_template('inicioseccion.html')
+
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
     if request.method == 'POST':
-        username = request.form.get('nombre')
+
+        nombre = request.form.get('nombre')
+        email = request.form.get('email')
         password = request.form.get('password')
+        confirmar = request.form.get('confirmar')
 
+        if not nombre or not email or not password or not confirmar:
+            return render_template('registro.html', error="Todos los campos son obligatorios")
 
-        if usuarios.find_one({"nombre": username}):
-            flash('El usuario ya existe', 'danger')
-            return redirect(url_for('registro'))
+        if password != confirmar:
+            return render_template('registro.html', error="Las contraseñas no coinciden")
 
-        
-        usuarios.insert_one({
-            "nombre": username,
-            "password": generate_password_hash(password)
-        })
+        email_valido = validar_email(email)
 
-        flash('Registro exitoso', 'success')
-        return redirect(url_for('login'))
+        if not email_valido:
+            return render_template('registro.html', error="Correo inválido")
+
+        try:
+            codigo = str(random.randint(100000, 999999))
+            enviar_correo(email_valido, codigo)
+
+            usuarios.insert_one({
+                "nombre": nombre,
+                "email": email_valido,
+                "password": generate_password_hash(password),
+                "activo": False,
+                "codigo": codigo,
+                "fecha": datetime.now()
+            })
+
+            flash("Revisa tu correo para verificar tu cuenta", "success")
+            return redirect(url_for('verificar'))
+
+        except DuplicateKeyError:
+            return render_template('registro.html', error="El usuario o correo ya existe")
 
     return render_template('registro.html')
 
+
+@app.route('/verificar', methods=['GET', 'POST'])
+def verificar():
+    if request.method == 'POST':
+        codigo = request.form.get('codigo')
+
+        usuario = usuarios.find_one({"codigo": codigo})
+
+        if usuario:
+            usuarios.update_one(
+                {"_id": usuario["_id"]},
+                {"$set": {"activo": True}, "$unset": {"codigo": ""}}
+            )
+
+            flash("Cuenta verificada correctamente", "success")
+            return redirect(url_for('login'))
+
+        flash("Código incorrecto", "danger")
+
+    return render_template('verificar.html')
+
+
+@app.route('/recuperar', methods=['GET', 'POST'])
+def recuperar():
+    if request.method == 'POST':
+        email = request.form.get('email')
+
+        usuario = usuarios.find_one({"email": email})
+
+        if usuario:
+            codigo = str(random.randint(100000, 999999))
+
+            usuarios.update_one(
+                {"_id": usuario["_id"]},
+                {"$set": {"codigo_recuperacion": codigo}}
+            )
+
+            enviar_correo(email, codigo)
+
+            return redirect(url_for('resetear'))
+
+        flash("Correo no encontrado", "danger")
+
+    return render_template('recuperar.html')
+
+
+@app.route('/resetear', methods=['GET', 'POST'])
+def resetear():
+    if request.method == 'POST':
+        codigo = request.form.get('codigo')
+        nueva = request.form.get('password')
+        confirmar = request.form.get('confirmar')
+
+        if nueva != confirmar:
+            flash("Las contraseñas no coinciden", "danger")
+            return redirect(url_for('resetear'))
+
+        usuario = usuarios.find_one({"codigo_recuperacion": codigo})
+
+        if usuario:
+            usuarios.update_one(
+                {"_id": usuario["_id"]},
+                {
+                    "$set": {"password": generate_password_hash(nueva)},
+                    "$unset": {"codigo_recuperacion": ""}
+                }
+            )
+
+            flash("Contraseña actualizada", "success")
+            return redirect(url_for('login'))
+
+        flash("Código inválido", "danger")
+
+    return render_template('resetear.html')
 
 
 @app.route('/gestordetarea')

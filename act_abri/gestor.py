@@ -1,150 +1,123 @@
+from flask import Flask, render_template, request
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError, ConnectionFailure
 from bson.objectid import ObjectId
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from email_validator import validate_email, EmailNotValidError
+
+import smtplib
+from email.mime.text import MIMEText
+import random
+from main import EMAIL_USER, EMAIL_PASS
+
+
+app = Flask(__name__)
+
+
+
+def enviar_correo(destinatario, codigo):
+    mensaje = MIMEText(f"Tu código es: {codigo}")
+    mensaje['Subject'] = "Código"
+    mensaje['From'] = EMAIL_USER
+    mensaje['To'] = destinatario
+
+    try:
+        servidor = smtplib.SMTP("smtp.gmail.com", 587)
+        servidor.set_debuglevel(1)
+        servidor.ehlo()
+        servidor.starttls()
+        servidor.ehlo()
+
+        servidor.login(EMAIL_USER, EMAIL_PASS)
+
+        resultado = servidor.sendmail(
+            EMAIL_USER,
+            destinatario,
+            mensaje.as_string()
+        )
+
+        servidor.quit()
+
+        print("Resultado envío:", resultado)
+
+        if resultado == {}:
+            print("✅ Correo enviado correctamente")
+            return True   
+        else:
+            print("⚠️ Algo falló:", resultado)
+            return False 
+
+    except Exception as e:
+        print("❌ Error enviando correo:", e)
+        return False 
 
 
 class GestorTareas:
-    def __init__(self, uri: str = 'mongodb://localhost:27017/'):
+    def __init__(self):
         try:
-            self.cliente = MongoClient(uri, serverSelectionTimeoutMS=5000)
+            self.cliente = MongoClient('mongodb://localhost:27017/', serverSelectionTimeoutMS=5000)
             self.cliente.admin.command('ping')
+
             self.db = self.cliente['gestor_tareas']
-            self.tareas = self.db['tareas']
             self.usuarios = self.db['usuarios']
 
-            self._crear_indices()
-            print("✅ Conectado a MongoDB")
+            self.usuarios.create_index(
+                "email",
+                unique=True,
+                sparse=True
+            )
+
+            print("✅ Mongo conectado")
+
         except ConnectionFailure:
-            print("❌ Error: No se pudo conectar a MongoDB")
+            print("❌ Error Mongo")
             raise
 
-    def _crear_indices(self):
-        self.usuarios.create_index("email", unique=True)
-        self.usuarios.create_index("nombre", unique=True)
-        self.tareas.create_index([("usuario_id", 1), ("fecha_creacion", -1)])
-        self.tareas.create_index("estado")
-
-    # 🔹 CREAR USUARIO
-    def crear_usuario(self, nombre: str, email: str, password: str) -> Optional[str]:
+    def validar_email(self, email):
         try:
+            valid = validate_email(email)
+            return valid.email
+        except EmailNotValidError:
+            return None
+
+    def crear_usuario(self, nombre, email, password):
+        email_valido = self.validar_email(email)
+
+        if not email_valido:
+            return None, "Correo inválido"
+
+        if not nombre or not password:
+            return None, "Faltan datos"
+
+        try:
+            codigo = str(random.randint(100000, 999999))
+
+        
+            enviar_correo(email_valido, codigo)
+
             resultado = self.usuarios.insert_one({
                 "nombre": nombre,
-                "email": email,
+                "email": email_valido,
                 "password": generate_password_hash(password),
-                "fecha_registro": datetime.now(),
-                "activo": True
+                "fecha": datetime.now(),
+                "activo": False,
+                "codigo": codigo
             })
-            return str(resultado.inserted_id)
+
+            return str(resultado.inserted_id), None
+
         except DuplicateKeyError:
-            print("❌ Usuario o email ya existe")
-            return None
+            return None, "El correo o usuario ya existe"
 
-    # 🔹 LOGIN POR NOMBRE
-    def iniciar_sesion(self, nombre: str, password: str) -> Optional[Dict]:
-        usuario = self.usuarios.find_one({"nombre": nombre})
-
-        if not usuario:
-            print("❌ Usuario no existe")
-            return None
-
-        if not check_password_hash(usuario["password"], password):
-            print("❌ Contraseña incorrecta")
-            return None
-
-        if not usuario.get("activo", True):
-            print("❌ Usuario inactivo")
-            return None
-
-        usuario['_id'] = str(usuario['_id'])
-        print("✅ Login exitoso")
-        return usuario
-
-    # 🔹 OBTENER USUARIO
-    def obtener_usuario(self, usuario_id: str) -> Optional[Dict]:
-        try:
-            usuario = self.usuarios.find_one({"_id": ObjectId(usuario_id)})
-            if usuario:
-                usuario['_id'] = str(usuario['_id'])
-            return usuario
-        except:
-            return None
-
-    # 🔹 CREAR TAREA
-    def crear_tarea(self, usuario_id: str, titulo: str, descripcion: str = "", fecha_limite: Optional[datetime] = None) -> Optional[str]:
-        if not self.obtener_usuario(usuario_id):
-            print("❌ Usuario no existe")
-            return None
-
-        tarea = {
-            "usuario_id": ObjectId(usuario_id),
-            "titulo": titulo,
-            "descripcion": descripcion,
-            "estado": "pendiente",
-            "fecha_creacion": datetime.now(),
-            "fecha_limite": fecha_limite or datetime.now() + timedelta(days=7),
-            "completada": False,
-            "etiquetas": []
-        }
-
-        resultado = self.tareas.insert_one(tarea)
-        return str(resultado.inserted_id)
-
-    # 🔹 OBTENER TAREAS
-    def obtener_tareas_usuario(self, usuario_id: str) -> List[Dict]:
-        tareas = self.tareas.find({"usuario_id": ObjectId(usuario_id)})
-        resultado = []
-
-        for t in tareas:
-            t['_id'] = str(t['_id'])
-            t['usuario_id'] = str(t['usuario_id'])
-            resultado.append(t)
-
-        return resultado
-
-    # 🔹 ACTUALIZAR ESTADO
-    def actualizar_estado_tarea(self, tarea_id: str, nuevo_estado: str) -> bool:
-        resultado = self.tareas.update_one(
-            {"_id": ObjectId(tarea_id)},
-            {"$set": {"estado": nuevo_estado}}
-        )
-        return resultado.modified_count > 0
-
-    # 🔹 ELIMINAR TAREA
-    def eliminar_tarea(self, tarea_id: str) -> bool:
-        resultado = self.tareas.delete_one({"_id": ObjectId(tarea_id)})
-        return resultado.deleted_count > 0
-
-    # 🔹 CERRAR
-    def cerrar_conexion(self):
-        self.cliente.close()
-        print("🔌 Conexión cerrada")
+       
+        except Exception as e:
+            print("❌ Error general:", e)
+            return None, "Error al registrar usuario"
 
 
-# 🔥 EJEMPLO COMPLETO
-def ejemplo_uso():
-    gestor = GestorTareas()
-
-    # Crear usuario
-    usuario_id = gestor.crear_usuario("mely", "mely@email.com", "1234")
-
-    # Login
-    usuario = gestor.iniciar_sesion("mely", "1234")
-
-    if usuario:
-        print("Bienvenido:", usuario["nombre"])
-
-        # Crear tarea
-        tarea_id = gestor.crear_tarea(usuario["_id"], "Estudiar MongoDB")
-
-        # Ver tareas
-        tareas = gestor.obtener_tareas_usuario(usuario["_id"])
-        print("Tareas:", tareas)
-
-    gestor.cerrar_conexion()
+gestor = GestorTareas()
 
 
-if __name__ == "__main__":
-    ejemplo_uso()
+if __name__ == '__main__':
+    app.run(debug=True)

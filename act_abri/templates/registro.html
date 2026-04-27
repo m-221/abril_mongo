@@ -12,18 +12,21 @@
             <h3 class="text-center mb-3" style="color:#5A5A5A;">
                 REGÍSTRATE PARA EMPEZAR
             </h3>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, msg in messages %}
-                        <div class="alert alert-{{category}}">
-                            {{ msg }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
 
-            <form method="POST" class="needs-validation" novalidate>
+          
+            {% if error %}
+                <div class="alert alert-danger text-center">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            {% if exito %}
+                <div class="alert alert-success text-center">
+                    {{ exito }}
+                </div>
+            {% endif %}
+
+            <form method="POST" novalidate>
                 
                 <div class="mb-3">
                     <label class="form-label">NOMBRE DE USUARIO</label>
@@ -52,7 +55,7 @@
                 <div class="mb-3">
                     <label class="form-label">CONFIRMAR CONTRASEÑA</label>
                     <input type="password" name="confirmar" class="form-control" required>
-                    <div class="invalid-feedback">
+                    <div class="invalid-feedback" id="error-password">
                         Debes confirmar la contraseña
                     </div>
                 </div>
@@ -75,18 +78,18 @@
 <script>
 (() => {
   'use strict'
-  const forms = document.querySelectorAll('.needs-validation')
+  const forms = document.querySelectorAll('form')
 
   forms.forEach(form => {
     form.addEventListener('submit', event => {
 
-      const password = form.querySelector('[name="password"]').value
-      const confirmar = form.querySelector('[name="confirmar"]').value
+      const password = form.querySelector('[name="password"]')
+      const confirmar = form.querySelector('[name="confirmar"]')
 
-      if (password !== confirmar) {
-        event.preventDefault()
-        alert("Las contraseñas no coinciden")
-        return
+      confirmar.setCustomValidity("")
+
+      if (password.value !== confirmar.value) {
+        confirmar.setCustomValidity("Las contraseñas no coinciden")
       }
 
       if (!form.checkValidity()) {

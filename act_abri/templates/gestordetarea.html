@@ -4,39 +4,83 @@
 
 {% block contenido %}
 
-<nav class="navbar navbar-expand-lg bg-body-tertiary">
+<nav class="navbar navbar-expand-lg shadow-sm" style="background: #fad0c4;">
   <div class="container-fluid">
-  
-    <button class="btn btn-primary" type="button"
+    
+    <button class="btn btn-light fw-bold px-4 rounded-pill shadow-sm"
+      type="button"
       data-bs-toggle="offcanvas"
       data-bs-target="#offcanvasWithBothOptions">
-        MENÚ
+        ☰ Menú
     </button>
+
+ <div class="text-center">
+  <span class="fw-bold"
+        style="font-size: 4rem; color:#ff7eb3; letter-spacing: 2px; font-family: 'Poppins', sans-serif;">
+    📋 Inicio 📋
+  </span>
+</div>
+
+  </div>
 </nav>
 
+
 <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasWithBothOptions">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title">Menú</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  
+  <div class="offcanvas-header text-white"
+       style="background: linear-gradient(90deg, #ff758c, #ff7eb3);">
+    <h5 class="offcanvas-title fw-bold">☰ Menú</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
   </div>
-  <div class="offcanvas-body">
-    <p>TAREAS PENDIENTES</p>
-    <p>TAREAS EN PROGRESO</p>
-    <p>TAREAS COMPLETADAS</p>
-    <p>AGREGAR TAREA</p>
-    <p>EDITAR TAREA</p>
+
+  <div class="offcanvas-body" style="background-color: #fff0f3;">
+    
+    <div class="list-group">
+
+      <a href="#" class="list-group-item list-group-item-action rounded-3 mb-2 shadow-sm">
+        📌 Tareas Pendientes
+      </a>
+
+      <a href="#" class="list-group-item list-group-item-action rounded-3 mb-2 shadow-sm">
+        ⏳ Tareas en Progreso
+      </a>
+
+      <a href="#" class="list-group-item list-group-item-action rounded-3 mb-2 shadow-sm">
+        ✅ Tareas Completadas
+      </a>
+
+      <a href="#" class="list-group-item list-group-item-action rounded-3 mb-2 shadow-sm">
+        ➕ Agregar Tarea
+      </a>
+
+      <a href="#" class="list-group-item list-group-item-action rounded-3 shadow-sm">
+        ✏️ Editar Tarea
+      </a>
+
+    </div>
+
   </div>
 </div>
 
 
 <div class="container mt-5 pt-5">
-  <div class="card shadow-lg p-4 rounded-4 mx-auto" style="background-color: #F5E6E8; max-width: 600px;">
-    <h3 class="text-center mb-3" style="color:#5A5A5A;">
-      ORGANIZA TUS TAREAS DE MANERA EFICIENTE
-    </h3>
-    <p class="text-center" style="color:#5A5A5A;">
-      Aquí podrás agregar, editar y eliminar tus tareas para mantenerte organizado.
+  <div class="card shadow-lg p-5 rounded-4 mx-auto text-center"
+       style="background: linear-gradient(135deg, #ffe4e1, #fff0f5); max-width: 650px;">
+    
+    <h2 class="mb-3 fw-bold" style="color:#444;">
+      🚀 Organiza tus tareas fácilmente
+    </h2>
+
+    <p style="color:#666; font-size: 1.1rem;">
+      Agrega, edita y controla tus tareas para mantenerte enfocado
+      y mejorar tu productividad día a día.
     </p>
+
+    <button class="btn mt-3 px-4 py-2 rounded-pill shadow-sm"
+            style="background-color:#ff7eb3; color:white;">
+      Empezar
+    </button>
+
   </div>
 </div>
 
