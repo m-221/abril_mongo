@@ -13,7 +13,7 @@
                 REGÍSTRATE PARA EMPEZAR
             </h3>
 
-          
+        
             {% if error %}
                 <div class="alert alert-danger text-center">
                     {{ error }}
@@ -83,21 +83,20 @@
   forms.forEach(form => {
     form.addEventListener('submit', event => {
 
-      const password = form.querySelector('[name="password"]')
-      const confirmar = form.querySelector('[name="confirmar"]')
+    const password = form.querySelector('[name="password"]')
+    const confirmar = form.querySelector('[name="confirmar"]')
 
-      confirmar.setCustomValidity("")
+    confirmar.setCustomValidity("")
 
-      if (password.value !== confirmar.value) {
+    if (password.value !== confirmar.value) {
         confirmar.setCustomValidity("Las contraseñas no coinciden")
-      }
+    }
 
-      if (!form.checkValidity()) {
+    if (!form.checkValidity()) {
         event.preventDefault()
         event.stopPropagation()
-      }
-
-      form.classList.add('was-validated')
+    }
+    form.classList.add('was-validated')
     }, false)
   })
 })()
