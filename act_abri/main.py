@@ -33,31 +33,6 @@ usuarios.create_index(
     sparse=True
 )
 
-
-def enviar_correo(destinatario, codigo):
-    mensaje = MIMEText(f"Tu código es: {codigo}")
-    mensaje['Subject'] = "Código"
-    mensaje['From'] = EMAIL_USER
-    mensaje['To'] = destinatario
-
-    try:
-        servidor = smtplib.SMTP("smtp.gmail.com", 587)
-        servidor.starttls()
-        servidor.login(EMAIL_USER, EMAIL_PASS)
-        servidor.send_message(mensaje)
-        servidor.quit()
-    except Exception as e:
-        print("❌ Error enviando correo:", e)
-
-
-def validar_email(email):
-    try:
-        valid = validate_email(email)
-        return valid.email
-    except EmailNotValidError:
-        return None
-
-
 @app.route('/')
 def base():
     return render_template('base.html')

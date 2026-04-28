@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError, ConnectionFailure
 from bson.objectid import ObjectId
