@@ -9,7 +9,7 @@ import smtplib
 from email.mime.text import MIMEText
 import random
 
-from config import EMAIL_USER, EMAIL_PASS, MONGO_URI, DB_NAME  # ✅ SIN CIRCULAR
+from config import EMAIL_USER, EMAIL_PASS, MONGO_URI, DB_NAME 
 
 
 def enviar_correo(destinatario, codigo):
