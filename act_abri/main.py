@@ -1,37 +1,31 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash
+from flask import Flask, render_template, request, redirect, session, url_for, flash 
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import validate_email, EmailNotValidError
 
-import smtplib
-from email.mime.text import MIMEText
 import random
 from datetime import datetime
+from bson.objectid import ObjectId
 
+from config import SECRET_KEY, MONGO_URI, DB_NAME
+from gestor import enviar_correo   
 
 app = Flask(__name__)
-app.secret_key = "clave_secreta"
+app.secret_key = SECRET_KEY
 
-
-EMAIL_USER = "fernandainfantepedroza040819@gmail.com"
-EMAIL_PASS = "nvfe mqow ylpn qpas"
-
-
-client = MongoClient("mongodb://localhost:27017/")
-db = client["gestor_tareas"]
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
 usuarios = db["usuarios"]
+tareas = db["tareas"]  
 
 try:
     usuarios.drop_index("email_1")
 except Exception:
     pass
 
-usuarios.create_index(
-    "email",
-    unique=True,
-    sparse=True
-)
+usuarios.create_index("email", unique=True, sparse=True)
+
 
 @app.route('/')
 def base():
@@ -78,13 +72,15 @@ def registro():
         if password != confirmar:
             return render_template('registro.html', error="Las contraseñas no coinciden")
 
-        email_valido = validar_email(email)
-
-        if not email_valido:
+        try:
+            valid = validate_email(email)
+            email_valido = valid.email
+        except EmailNotValidError:
             return render_template('registro.html', error="Correo inválido")
 
         try:
             codigo = str(random.randint(100000, 999999))
+
             enviar_correo(email_valido, codigo)
 
             usuarios.insert_one({
@@ -186,6 +182,64 @@ def gestordetareas():
         return redirect(url_for('login'))
 
     return render_template('gestordetarea.html', usuario=session['username'])
+
+
+@app.route('/gestorsecundario')
+def gestorsecundario():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    tareas_usuario = tareas.find({"usuario": session['username']})
+
+    return render_template(
+        'gestorsecundario.html',
+        usuario=session['username'],
+        tareas=tareas_usuario
+
+
+    )
+
+
+
+@app.route('/agregartarea', methods=['GET', 'POST'])
+def agregartarea():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        descripcion = request.form.get('descripcion')
+
+        tareas.insert_one({
+            "nombre": nombre,
+            "descripcion": descripcion,
+            "usuario": session['username'],
+            "estado": "pendiente"
+        })
+
+        return redirect(url_for('gestorsecundario'))
+
+    return render_template('agregar.html')
+
+@app.route('/completar/<id>')
+def completar(id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    from bson.objectid import ObjectId
+
+    tareas.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": {"estado": "completada"}}
+    )
+
+    return redirect(url_for('gestorsecundario'))
+
+
+@app.route('/borrar/<id>')
+def borrar(id):
+    tareas.delete_one({"_id": ObjectId(id)})
+    return redirect(url_for('gestorsecundario'))
 
 
 @app.route('/logout')

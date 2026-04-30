@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block titulo %}Gestor de Tareas{% endblock %}
+
+{% block contenido %}
+
+<nav class="navbar navbar-expand-lg shadow-sm" style="background:#F5E6E8;">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-light fw-bold px-4 rounded-pill shadow-sm"
+        type="button"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#offcanvasWithBothOptions"
+        style="background:#C8A2AA; color:white;">
+          ☰ Menú
+      </button>
+
+      <a href="#" class="btn btn-light fw-bold px-4 rounded-pill shadow-sm"
+         style="background:#C8A2AA; color:white;">
+        👤
+      </a>
+    </div>
+
+    <div class="text-center flex-grow-1">
+      <span class="fw-bold"
+            style="font-size: 5rem; color:#5a4a4a; letter-spacing: 35px;">
+        ✨- Inicio -✨
+      </span>
+    </div>
+
+    <a href="{{ url_for('logout') }}" 
+       class="btn btn-light fw-bold px-4 rounded-pill shadow-sm"
+       style="background:#C8A2AA; color:white;">
+       ⎋cerrar sesión
+    </a>
+
+  </div>
+</nav>
+
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasWithBothOptions">
+  
+  <div class="offcanvas-header text-white"
+       style="background:#C8A2AA;">
+    <h5 class="offcanvas-title fw-bold">☰ Menú</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+
+  <div class="offcanvas-body" style="background-color:#fff0f5;">
+    
+    <div class="list-group">
+
+      <a href="#" class="list-group-item list-group-item-action mb-2 shadow-sm">
+        📌 Tareas Pendientes
+      </a>
+
+      <a href="#" class="list-group-item list-group-item-action mb-2 shadow-sm">
+        ⏳ Tareas en Progreso
+      </a>
+
+      <a href="#" class="list-group-item list-group-item-action mb-2 shadow-sm">
+        ✅ Tareas Completadas
+      </a>
+
+      <a href="{{ url_for('agregartarea') }}" class="list-group-item list-group-item-action mb-2 shadow-sm">
+        ➕ Agregar Tarea
+      </a>
+
+      <a href="#" class="list-group-item list-group-item-action shadow-sm">
+        ✏️ Editar Tarea
+      </a>
+
+    </div>
+
+  </div>
+</div>
+<div class="container mt-5">
+
+
+
+  <div class="row justify-content-center">
+
+    {% for tarea in tareas %}
+      {% if tarea.estado == "pendiente" %}
+
+      <div class="col-md-4 mb-4">
+
+        <div class="card shadow-sm h-100" style="border-radius:15px;">
+
+          <div class="card-header text-center fw-bold"
+               style="background:#F8BBD0; color:#5a4a4a;">
+            🌸 Tarea {{ loop.index }}
+          </div>
+
+          <div class="card-body text-center">
+
+            <h6 class="fw-bold mb-2" style="color:#5a4a4a;">
+              {{ tarea.nombre }}
+            </h6>
+
+            <p class="text-muted mb-4">
+              {{ tarea.descripcion }}
+            </p>
+
+            <div class="d-flex justify-content-center gap-2">
+
+              <a href="{{ url_for('completar', id=tarea._id) }}" 
+                 class="btn btn-sm w-50"
+                 style="background:#C8A2AA; color:white; border-radius:10px;">
+                ✔ 
+              </a>
+
+              <a href="{{ url_for('borrar', id=tarea._id) }}" 
+                 class="btn btn-sm w-50"
+                 style="border:1px solid #C8A2AA; color:#C8A2AA; border-radius:10px;">
+                🗑 
+              </a>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {% endif %}
+    {% endfor %}
+
+  </div>
+
+</div>
+
+{% endblock %}
