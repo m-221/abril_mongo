@@ -20,7 +20,7 @@ usuarios = db["usuarios"]
 tareas = db["tareas"]  
 
 try:
-    usuarios.drop_index("email_1")
+    usuarios.drop_index("email_2")
 except Exception:
     pass
 
