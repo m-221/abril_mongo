@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+<h1 class="text-center mt-3">Perfil</h1>
+{% endblock %}
+
+{% block contenido %}
+
+<div class="container my-5 pt-4">
+
+    <div class="card shadow-lg rounded-4 mx-auto overflow-hidden"
+        style="max-width: 450px; background-color:#F5E6E8;">
+
+
+        <div class="text-center p-4" style="background-color:#C8A2AA;">
+
+            <div class="rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center"
+                style="width:80px; height:80px; background-color:white; color:#C8A2AA; font-size:30px; font-weight:bold;">
+                {{ usuario.nombre[0]|upper }}
+            </div>
+
+            <h4 style="color:white; margin:0;">
+                Hola, bienvenido
+            </h4>
+
+            <h3 style="color:white; margin-top:5px; font-weight:bold;">
+                {{ usuario.nombre }}
+            </h3>
+
+        </div>
+
+        <div class="p-4">
+
+            <div class="mb-3">
+                <label style="color:#5A5A5A;">Nombre de usuario</label>
+                <div class="p-2 rounded"
+                    style="background-color:white; border:1px solid #C8A2AA;">
+                    {{ usuario.nombre }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label style="color:#5A5A5A;">Correo electrónico</label>
+                <div class="p-2 rounded"
+                    style="background-color:white; border:1px solid #C8A2AA;">
+                    {{ usuario.email }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label style="color:#5A5A5A;">Estado</label>
+                <div class="p-2 rounded text-center"
+                    style="background-color:white; border:1px solid #C8A2AA;">
+                    ACTIVO
+                </div>
+            </div>
+
+
+            <div class="d-grid gap-2 mt-4">
+
+                <a href="/editar_perfil"
+                   class="btn"
+                   style="background-color:#C8A2AA; color:white; border-radius:10px;">
+                    EDITAR PERFIL
+                </a>
+
+                <a href="/gestorsecundario"
+                   class="btn"
+                   style="background-color:white; color:#5A5A5A; border:1px solid #C8A2AA; border-radius:10px;">
+                    MIS TAREAS
+                </a>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

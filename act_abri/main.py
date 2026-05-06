@@ -1,15 +1,14 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash 
+from flask import Flask, render_template, request, redirect, session, url_for, flash
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import validate_email, EmailNotValidError
-
-import random
-from datetime import datetime
 from bson.objectid import ObjectId
+from datetime import datetime
+import random
 
 from config import SECRET_KEY, MONGO_URI, DB_NAME
-from gestor import enviar_correo   
+from gestor import enviar_correo
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -17,7 +16,7 @@ app.secret_key = SECRET_KEY
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 usuarios = db["usuarios"]
-tareas = db["tareas"]  
+tareas = db["tareas"]
 
 try:
     usuarios.drop_index("email_2")
@@ -39,6 +38,7 @@ def login():
         password = request.form.get('password')
 
         usuario = usuarios.find_one({"nombre": username})
+        
 
         if usuario and check_password_hash(usuario["password"], password):
 
@@ -46,7 +46,7 @@ def login():
                 flash("Debes verificar tu correo", "warning")
                 return redirect(url_for('login'))
 
-            session['username'] = username
+            session['username'] = usuario["nombre"]
             session['user_id'] = str(usuario["_id"])
 
             flash('Inicio de sesión exitoso', 'success')
@@ -60,7 +60,6 @@ def login():
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
     if request.method == 'POST':
-
         nombre = request.form.get('nombre')
         email = request.form.get('email')
         password = request.form.get('password')
@@ -105,7 +104,6 @@ def registro():
 def verificar():
     if request.method == 'POST':
         codigo = request.form.get('codigo')
-
         usuario = usuarios.find_one({"codigo": codigo})
 
         if usuario:
@@ -126,7 +124,6 @@ def verificar():
 def recuperar():
     if request.method == 'POST':
         email = request.form.get('email')
-
         usuario = usuarios.find_one({"email": email})
 
         if usuario:
@@ -138,7 +135,6 @@ def recuperar():
             )
 
             enviar_correo(email, codigo)
-
             return redirect(url_for('resetear'))
 
         flash("Correo no encontrado", "danger")
@@ -195,10 +191,7 @@ def gestorsecundario():
         'gestorsecundario.html',
         usuario=session['username'],
         tareas=tareas_usuario
-
-
     )
-
 
 
 @app.route('/agregartarea', methods=['GET', 'POST'])
@@ -221,12 +214,11 @@ def agregartarea():
 
     return render_template('agregar.html')
 
+
 @app.route('/completar/<id>')
 def completar(id):
     if 'username' not in session:
         return redirect(url_for('login'))
-
-    from bson.objectid import ObjectId
 
     tareas.update_one(
         {"_id": ObjectId(id)},
@@ -238,8 +230,47 @@ def completar(id):
 
 @app.route('/borrar/<id>')
 def borrar(id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
     tareas.delete_one({"_id": ObjectId(id)})
     return redirect(url_for('gestorsecundario'))
+
+
+@app.route('/perfil')
+def perfil():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    usuario = usuarios.find_one({"_id": ObjectId(session['user_id'])})
+
+    return render_template('perfil.html', usuario=usuario)
+
+@app.route('/editar_perfil', methods=['GET', 'POST'])
+def editar_perfil():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    usuario = usuarios.find_one({"_id": ObjectId(session['user_id'])})
+
+    if request.method == 'POST':
+        nuevo_nombre = request.form.get('nombre')
+        nuevo_email = request.form.get('email')
+
+        usuarios.update_one(
+            {"_id": ObjectId(session['user_id'])},
+            {"$set": {
+                "nombre": nuevo_nombre,
+                "email": nuevo_email
+            }}
+        )
+
+        session['username'] = nuevo_nombre
+
+        flash("Perfil actualizado correctamente", "success")
+        return redirect(url_for('perfil'))
+
+    return render_template('editar_perfil.html', usuario=usuario)
 
 
 @app.route('/logout')
