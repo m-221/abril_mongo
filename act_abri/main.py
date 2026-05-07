@@ -7,6 +7,9 @@ from bson.objectid import ObjectId
 from datetime import datetime
 import random
 
+
+#otro detalle en caso de que al intentar ejecutar el uv y le dice que le falta el pyproject, ejecute primero cd act_abri y luego uv sync
+
 from config import SECRET_KEY, MONGO_URI, DB_NAME
 from gestor import enviar_correo
 
@@ -33,28 +36,36 @@ def base():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
     if request.method == 'POST':
+
         username = request.form.get('username')
         password = request.form.get('password')
 
         usuario = usuarios.find_one({"nombre": username})
-        
 
         if usuario and check_password_hash(usuario["password"], password):
 
             if not usuario.get("activo"):
+
                 flash("Debes verificar tu correo", "warning")
+
                 return redirect(url_for('login'))
 
             session['username'] = usuario["nombre"]
             session['user_id'] = str(usuario["_id"])
 
             flash('Inicio de sesión exitoso', 'success')
+
             return redirect(url_for('gestordetareas'))
 
-        flash('Credenciales incorrectas', 'danger')
+        return render_template(
+            'inicioseccion.html',
+            error=True
+        )
 
     return render_template('inicioseccion.html')
+
 
 
 @app.route('/registro', methods=['GET', 'POST'])
