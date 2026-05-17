@@ -8,7 +8,11 @@ from datetime import datetime
 import random
 
 from config import SECRET_KEY, MONGO_URI, DB_NAME
-from gestor import enviar_correo
+from gestor import (
+    gestor,
+    enviar_correo,
+    enviar_correo_recuperacion
+)
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -120,57 +124,52 @@ def verificar():
     return render_template('verificar.html')
 
 
-@app.route('/recuperar', methods=['GET', 'POST'])
-def recuperar():
+@app.route('/resetear/<token>', methods=['GET', 'POST'])
+def resetear(token):
+
     if request.method == 'POST':
-        email = request.form.get('email')
-        usuario = usuarios.find_one({"email": email})
 
-        if usuario:
-            codigo = str(random.randint(100000, 999999))
-
-            usuarios.update_one(
-                {"_id": usuario["_id"]},
-                {"$set": {"codigo_recuperacion": codigo}}
-            )
-
-            enviar_correo(email, codigo)
-            return redirect(url_for('resetear'))
-
-        flash("Correo no encontrado", "danger")
-
-    return render_template('recuperar.html')
-
-
-@app.route('/resetear', methods=['GET', 'POST'])
-def resetear():
-    if request.method == 'POST':
-        codigo = request.form.get('codigo')
         nueva = request.form.get('password')
         confirmar = request.form.get('confirmar')
 
         if nueva != confirmar:
             flash("Las contraseñas no coinciden", "danger")
-            return redirect(url_for('resetear'))
+            return render_template('resetear.html')
 
-        usuario = usuarios.find_one({"codigo_recuperacion": codigo})
+        actualizado = gestor.resetear_password(token, nueva)
 
-        if usuario:
-            usuarios.update_one(
-                {"_id": usuario["_id"]},
-                {
-                    "$set": {"password": generate_password_hash(nueva)},
-                    "$unset": {"codigo_recuperacion": ""}
-                }
-            )
+        if not actualizado:
+            flash("Link inválido o expirado", "danger")
+            return redirect(url_for('recuperar'))
 
-            flash("Contraseña actualizada", "success")
-            return redirect(url_for('login'))
-
-        flash("Código inválido", "danger")
+        flash("Contraseña actualizada", "success")
+        return redirect(url_for('login'))
 
     return render_template('resetear.html')
 
+
+@app.route('/recuperar', methods=['GET', 'POST'])
+def recuperar():
+
+    if request.method == 'POST':
+
+        email = request.form.get('email')
+
+        token = gestor.generar_token_recuperacion(email)
+
+        if token:
+
+            link = url_for('resetear', token=token, _external=True)
+
+            enviar_correo_recuperacion(email, link)
+
+            flash("Te enviamos un enlace de recuperación", "success")
+
+            return redirect(url_for('login'))
+
+        flash("Correo no encontrado", "danger")
+
+    return render_template('recuperar.html')
 
 @app.route('/gestordetarea')
 def gestordetareas():
@@ -279,5 +278,5 @@ def logout():
     return redirect(url_for('login'))
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True, use_reloader=False)

@@ -1,5 +1,5 @@
 EMAIL_USER = "fernandainfantepedroza040819@gmail.com"
-EMAIL_PASS = "nvfe mqow ylpn qpas"
+EMAIL_PASS = "pnpd uzcf ckxc xnez".replace(" ", "")
 
 SECRET_KEY = "clave_secreta_1904"
 
